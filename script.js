@@ -7,40 +7,75 @@ const confettiSettings = {
 };
 
 // DOM Elements
-const confessionForm = document.getElementById('confession-form');
-const confessionInput = document.getElementById('confession-text');
-const charCount = document.getElementById('char-count');
-const submitBtn = document.getElementById('submit-btn');
-const statusEl = document.getElementById('status-message');
-const reactionBtns = document.querySelectorAll('.reaction-btn');
-const reactionCounts = document.querySelectorAll('.reaction-count');
-const modal = document.getElementById('success-modal');
-const closeModalBtn = document.querySelector('.close-modal');
+let confessionForm = document.querySelector('form');
+let confessionInput = document.getElementById('confessionText');
+let charCount = document.getElementById('charCount');
+let submitBtn = document.getElementById('submitBtn');
+const modal = document.getElementById('successModal');
+const closeModalBtn = document.querySelector('.close');
+const reactionElements = document.querySelectorAll('.reaction');
+
+// Add form event listener if form exists
+if (confessionForm) {
+  confessionForm.addEventListener('submit', handleFormSubmit);
+}
+
+// Add input event for character counter
+if (confessionInput) {
+  confessionInput.addEventListener('input', updateCharCount);
+}
+
+// Add click event for close button
+if (closeModalBtn) {
+  closeModalBtn.addEventListener('click', closeModal);
+}
+
+// Add click event for reactions
+reactionElements.forEach(reaction => {
+  reaction.addEventListener('click', () => {
+    let count = parseInt(reaction.textContent) || 0;
+    reaction.textContent = count + 1;
+    reaction.classList.add('animate-bounce');
+    setTimeout(() => reaction.classList.remove('animate-bounce'), 1000);
+  });
+});
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize character counter
-  updateCharCount();
+  if (confessionInput && charCount) {
+    updateCharCount();
+  }
   
   // Initialize typing animation
   typeWriter();
   
   // Initialize matrix rain
   createMatrixRain();
+  
+  // Add click outside modal to close
+  window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
 });
 
 // Character counter
 function updateCharCount() {
+  if (!confessionInput || !charCount) return;
+  
   const remaining = 500 - confessionInput.value.length;
-  charCount.textContent = `${remaining} characters left`;
+  charCount.textContent = remaining;
   charCount.className = remaining < 50 ? 'text-red-500' : 'text-gray-400';
 }
 
-confessionInput.addEventListener('input', updateCharCount);
-
 // Handle form submission
-confessionForm.addEventListener('submit', async (e) => {
+async function handleFormSubmit(e) {
   e.preventDefault();
+  
+  if (!confessionInput || !submitBtn) return;
+  
   const text = confessionInput.value.trim();
   
   // Validate input
@@ -57,30 +92,59 @@ confessionForm.addEventListener('submit', async (e) => {
   try {
     // Show loading state
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+    const btnText = submitBtn.querySelector('.btn-text');
+    const spinner = submitBtn.querySelector('.spinner');
+    
+    if (btnText) btnText.textContent = 'Posting...';
+    if (spinner) spinner.style.display = 'inline-block';
     
     // Check if we're in development or production
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const apiUrl = isLocal 
       ? 'http://localhost:8888/.netlify/functions/confess'
       : '/.netlify/functions/confess';
-        // Reset form
-        confessionForm.reset();
-        charCount.textContent = '0';
-        
-    } catch (error) {
-        console.error('Error:', error);
-        showMessage(`Failed to post: ${error.message}`, 'error');
-    } finally {
-        // Reset button state
-        submitBtn.disabled = false;
-        btnText.textContent = 'POST ANONYMOUSLY';
-        spinner.style.display = 'none';
+    
+    // Send to Netlify function
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to post confession');
     }
-});
+    
+    // Success
+    showStatus('Confession posted successfully! 🎉', 'success');
+    showConfetti();
+    
+    // Reset form
+    if (confessionForm) confessionForm.reset();
+    if (charCount) charCount.textContent = '0';
+    
+    // Show success modal
+    openModal();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    showStatus(error.message || 'Failed to post confession. Please try again.', 'error');
+  } finally {
+    // Reset button state
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      const btnText = submitBtn.querySelector('.btn-text');
+      const spinner = submitBtn.querySelector('.spinner');
+      if (btnText) btnText.textContent = 'POST ANONYMOUSLY';
+      if (spinner) spinner.style.display = 'none';
+    }
+  }
+}
 
 // Show message function
-function showMessage(message, type = 'info') {
+function showStatus(message, type = 'info') {
     // Remove any existing messages
     const existingMessages = document.querySelectorAll('.message');
     existingMessages.forEach(msg => msg.remove());
@@ -100,6 +164,7 @@ function showMessage(message, type = 'info') {
     messageDiv.style.zIndex = '1000';
     messageDiv.style.animation = 'slideIn 0.3s ease-out';
     messageDiv.style.fontWeight = 'bold';
+    messageDiv.style.whiteSpace = 'nowrap';
     
     // Style based on type
     if (type === 'success') {
@@ -136,6 +201,21 @@ function showConfetti() {
     });
 }
 
+// Modal functions
+function openModal() {
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal() {
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
 // Add animations to style
 const style = document.createElement('style');
 style.textContent = `
@@ -148,18 +228,59 @@ style.textContent = `
         from { transform: translate(-50%, 0); opacity: 1; }
         to { transform: translate(-50%, -50px); opacity: 0; }
     }
+    
+    .spinner {
+        display: none;
+        margin-left: 8px;
+    }
+    
+    .message {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        border-radius: 4px;
+        color: white;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    .message-success {
+        background-color: #4CAF50;
+    }
+    
+    .message-error {
+        background-color: #f44336;
+    }
 `;
 document.head.appendChild(style);
 
-// Initialize typing effect on load
-document.addEventListener('DOMContentLoaded', () => {
+// Typing effect
+function typeWriter() {
     const title = document.querySelector('h1');
-    const titleText = title.textContent;
-    typeWriter(title, titleText, 150);
+    if (!title) return;
     
-    // Add matrix rain effect
-    createMatrixRain();
-});
+    const text = title.textContent;
+    title.textContent = '';
+    
+    let i = 0;
+    const speed = 100; // milliseconds per character
+    
+    function type() {
+        if (i < text.length) {
+            title.textContent += text.charAt(i);
+            i++;
+            setTimeout(type, speed);
+        }
+    }
+    
+    type();
+}
+
+// Reaction buttons functionality is now at the top of the file
 
 // Matrix rain effect
 function createMatrixRain() {
