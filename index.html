@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Confessions 👻</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Bangers&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="particles" id="particles-js"></div>
+    <div class="matrix-rain"></div>
+    
+    <div class="container">
+        <header>
+            <div class="school-badge">Class of 2026 Confessions</div>
+            <h1 class="glitch" data-text="Spill the Tea 👀">Spill the Tea 👀</h1>
+            <p class="subtitle">Your secrets are safe with us. 100% anonymous. No logs, no traces.</p>
+        </header>
+
+        <main>
+            <div class="confession-box glass">
+                <textarea 
+                    id="confessionText" 
+                    placeholder="Who's crushing on who? Teacher drama? Classroom beef? Be anonymous 🔥" 
+                    minlength="10" 
+                    maxlength="500"
+                    required
+                ></textarea>
+                <div class="char-count"><span id="charCount">0</span>/500</div>
+                <button id="submitBtn" class="pulse">
+                    <span class="btn-text">POST ANONYMOUSLY</span>
+                    <span class="spinner"><i class="fas fa-spinner fa-spin"></i></span>
+                </button>
+            </div>
+
+            <div class="reactions">
+                <span class="reaction" data-emoji="🔥">0</span>
+                <span class="reaction" data-emoji="😂">0</span>
+                <span class="reaction" data-emoji="😮">0</span>
+                <span class="reaction" data-emoji="❤️">0</span>
+                <span class="reaction" data-emoji="😢">0</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content glass">
+            <span class="close">&times;</span>
+            <h2>Your confession is LIVE! 👻</h2>
+            <p>Check our Instagram story to see your confession!</p>
+            <div class="confetti"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
