@@ -22,6 +22,8 @@
 
 [functions]
   node_bundler = "esbuild"
+  [functions.edge_handlers]
+    timeout = 30  # Increase timeout to 30 seconds
 
 [dev]
   targetPort = 8888

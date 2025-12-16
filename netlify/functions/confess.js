@@ -127,6 +127,16 @@ async function postToInstagram(text) {
 
 // Main handler function
 exports.handler = async (event, context) => {
+  console.log('=== New Request ===');
+  console.log('Method:', event.httpMethod);
+  console.log('Headers:', JSON.stringify(event.headers, null, 2));
+  
+  // Log environment variables (except sensitive ones)
+  console.log('Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    IG_USERNAME: process.env.IG_USERNAME ? '***set***' : 'MISSING',
+    IG_PASSWORD: process.env.IG_PASSWORD ? '***set***' : 'MISSING'
+  });
   // Set CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -206,8 +216,13 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Post to Instagram
-    const result = await postToInstagram(text);
+    // Post to Instagram with timeout
+    const result = await Promise.race([
+      postToInstagram(text),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Instagram posting timed out after 25 seconds')), 25000)
+      )
+    ]);
     
     // Return success response
     return {
@@ -220,7 +235,13 @@ exports.handler = async (event, context) => {
       }),
     };
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+      response: error.response?.data
+    });
     
     return {
       statusCode: 500,
