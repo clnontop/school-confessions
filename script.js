@@ -7,7 +7,8 @@ const confettiSettings = {
 };
 
 // DOM Elements
-let confessionForm = document.querySelector('form');
+console.log('Initializing script...');
+let confessionForm = document.getElementById('confessionForm');
 let confessionInput = document.getElementById('confessionText');
 let charCount = document.getElementById('charCount');
 let submitBtn = document.getElementById('submitBtn');
@@ -15,12 +16,22 @@ const modal = document.getElementById('successModal');
 const closeModalBtn = document.querySelector('.close');
 const reactionElements = document.querySelectorAll('.reaction');
 
+// Debug: Log all found elements
+console.log('Form:', confessionForm);
+console.log('Input:', confessionInput);
+console.log('Submit Button:', submitBtn);
+
 // Add form event listener if form exists
 if (confessionForm) {
-  confessionForm.addEventListener('submit', handleFormSubmit);
+  console.log('Form found, adding submit event listener');
+  confessionForm.addEventListener('submit', function(e) {
+    console.log('Form submit event triggered');
+    handleFormSubmit(e);
+  });
+} else {
+  console.error('Form element not found!');
 }
 
-// Add input event for character counter
 if (confessionInput) {
   confessionInput.addEventListener('input', updateCharCount);
 }
@@ -72,9 +83,13 @@ function updateCharCount() {
 
 // Handle form submission
 async function handleFormSubmit(e) {
+  console.log('handleFormSubmit called');
   e.preventDefault();
   
-  if (!confessionInput || !submitBtn) return;
+  if (!confessionInput || !submitBtn) {
+    console.error('Missing required elements:', { confessionInput, submitBtn });
+    return;
+  }
   
   const text = confessionInput.value.trim();
   
@@ -105,15 +120,25 @@ async function handleFormSubmit(e) {
       : '/.netlify/functions/confess';
     
     // Send to Netlify function
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
+    console.log('Sending request to:', apiUrl, 'with text:', text);
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ text })
+      });
+      
+      console.log('Response status:', response.status);
+      const data = await response.json().catch(e => ({}));
+      console.log('Response data:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
       throw new Error(data.error || 'Failed to post confession');
     }
     
@@ -129,8 +154,10 @@ async function handleFormSubmit(e) {
     openModal();
     
   } catch (error) {
-    console.error('Error:', error);
-    showStatus(error.message || 'Failed to post confession. Please try again.', 'error');
+    console.error('Error in form submission:', error);
+    const errorMessage = error.message || 'Failed to post confession. Please try again.';
+    console.error('Error details:', errorMessage);
+    showStatus(errorMessage, 'error');
   } finally {
     // Reset button state
     if (submitBtn) {
