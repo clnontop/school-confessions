@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Confession</title>
+</head>
+<body>
+    <h1>Test Confession Submission</h1>
+    <button onclick="testFunction()">Test Function</button>
+    <div id="result"></div>
+
+    <script>
+    async function testFunction() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.textContent = 'Testing...';
+        
+        try {
+            const response = await fetch('/.netlify/functions/confess', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: 'This is a test confession to check if the function works' })
+            });
+            
+            const data = await response.json();
+            resultDiv.textContent = `Success! Response: ${JSON.stringify(data, null, 2)}`;
+        } catch (error) {
+            resultDiv.textContent = `Error: ${error.message}`;
+        }
+    }
+    </script>
+</body>
+</html>
