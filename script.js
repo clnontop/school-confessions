@@ -138,21 +138,25 @@ confessionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const confession = confessionText.value.trim();
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const spinner = submitBtn.querySelector('.spinner');
     
     // Validation
     if (confession.length < 10) {
-        alert('Confession must be at least 10 characters long!');
+        showMessage('Confession must be at least 10 characters long!', 'error');
         return;
     }
     
     if (confession.length > 500) {
-        alert('Confession must be less than 500 characters!');
+        showMessage('Confession must be less than 500 characters!', 'error');
         return;
     }
     
     // Show loading state
     submitBtn.disabled = true;
-    submitBtn.classList.add('loading');
+    btnText.textContent = 'Posting...';
+    spinner.style.display = 'inline-block';
     
     try {
         // Check if we're in development or production
@@ -169,30 +173,102 @@ confessionForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ text: confession })
         });
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
         const result = await response.json();
         
-        if (result.success) {
-            // Show success modal
-            showModal();
-            // Reset form
-            confessionForm.reset();
-            charCount.textContent = '0';
-        } else {
-            throw new Error(result.error || 'Failed to post confession');
+        if (!response.ok) {
+            throw new Error(result.error || `HTTP error! status: ${response.status}`);
         }
+        
+        // Show success message and confetti
+        showMessage('Confession posted successfully! 🎉', 'success');
+        showConfetti();
+        
+        // Reset form
+        confessionForm.reset();
+        charCount.textContent = '0';
+        
     } catch (error) {
         console.error('Error:', error);
-        alert(`Failed to post confession: ${error.message}`);
+        showMessage(`Failed to post: ${error.message}`, 'error');
     } finally {
         // Reset button state
         submitBtn.disabled = false;
-        submitBtn.classList.remove('loading');
+        btnText.textContent = 'POST ANONYMOUSLY';
+        spinner.style.display = 'none';
     }
 });
+
+// Show message function
+function showMessage(message, type = 'info') {
+    // Remove any existing messages
+    const existingMessages = document.querySelectorAll('.message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${type}`;
+    messageDiv.textContent = message;
+    
+    // Add styles
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '20px';
+    messageDiv.style.left = '50%';
+    messageDiv.style.transform = 'translateX(-50%)';
+    messageDiv.style.padding = '15px 25px';
+    messageDiv.style.borderRadius = '5px';
+    messageDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+    messageDiv.style.zIndex = '1000';
+    messageDiv.style.animation = 'slideIn 0.3s ease-out';
+    messageDiv.style.fontWeight = 'bold';
+    
+    // Style based on type
+    if (type === 'success') {
+        messageDiv.style.backgroundColor = '#4CAF50';
+        messageDiv.style.color = 'white';
+    } else if (type === 'error') {
+        messageDiv.style.backgroundColor = '#f44336';
+        messageDiv.style.color = 'white';
+    } else {
+        messageDiv.style.backgroundColor = '#2196F3';
+        messageDiv.style.color = 'white';
+    }
+    
+    document.body.appendChild(messageDiv);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        messageDiv.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                document.body.removeChild(messageDiv);
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Show confetti effect
+function showConfetti() {
+    confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#ff2a6d', '#d300c5', '#01cdfe']
+    });
+}
+
+// Add animations to style
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translate(-50%, -50px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translate(-50%, 0); opacity: 1; }
+        to { transform: translate(-50%, -50px); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
 
 // Initialize typing effect on load
 document.addEventListener('DOMContentLoaded', () => {
