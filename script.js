@@ -1,188 +1,69 @@
+// Confetti setup
+const confettiSettings = { 
+  particleCount: 100,
+  spread: 70,
+  origin: { y: 0.6 },
+  colors: ['#ff2a6d', '#d300c5', '#01cdfe']
+};
+
 // DOM Elements
-const confessionForm = document.querySelector('.confession-box');
-const confessionText = document.getElementById('confessionText');
-const submitBtn = document.getElementById('submitBtn');
-const charCount = document.getElementById('charCount');
-const successModal = document.getElementById('successModal');
-const closeModal = document.querySelector('.close');
-const reactions = document.querySelectorAll('.reaction');
+const confessionForm = document.getElementById('confession-form');
+const confessionInput = document.getElementById('confession-text');
+const charCount = document.getElementById('char-count');
+const submitBtn = document.getElementById('submit-btn');
+const statusEl = document.getElementById('status-message');
+const reactionBtns = document.querySelectorAll('.reaction-btn');
+const reactionCounts = document.querySelectorAll('.reaction-count');
+const modal = document.getElementById('success-modal');
+const closeModalBtn = document.querySelector('.close-modal');
 
-// Initialize particles.js
-particlesJS('particles-js', {
-    particles: {
-        number: { value: 80, density: { enable: true, value_area: 800 } },
-        color: { value: "#ffffff" },
-        shape: { type: "circle" },
-        opacity: {
-            value: 0.5,
-            random: true,
-            anim: { enable: true, speed: 1, opacity_min: 0.1, sync: false }
-        },
-        size: {
-            value: 3,
-            random: true,
-            anim: { enable: true, speed: 2, size_min: 0.1, sync: false }
-        },
-        line_linked: {
-            enable: true,
-            distance: 150,
-            color: "#ff2a6d",
-            opacity: 0.2,
-            width: 1
-        },
-        move: {
-            enable: true,
-            speed: 1,
-            direction: "none",
-            random: true,
-            straight: false,
-            out_mode: "out",
-            bounce: false
-        }
-    },
-    interactivity: {
-        detect_on: "canvas",
-        events: {
-            onhover: { enable: true, mode: "repulse" },
-            onclick: { enable: true, mode: "push" },
-            resize: true
-        }
-    },
-    retina_detect: true
+// Initialize on DOM load
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize character counter
+  updateCharCount();
+  
+  // Initialize typing animation
+  typeWriter();
+  
+  // Initialize matrix rain
+  createMatrixRain();
 });
-
-// Typing effect for title
-function typeWriter(element, text, speed = 100) {
-    let i = 0;
-    element.textContent = '';
-    element.classList.add('typing');
-    
-    function type() {
-        if (i < text.length) {
-            element.textContent += text.charAt(i);
-            i++;
-            setTimeout(type, speed);
-        } else {
-            element.classList.remove('typing');
-        }
-    }
-    
-    type();
-}
 
 // Character counter
-confessionText.addEventListener('input', () => {
-    const currentLength = confessionText.value.length;
-    charCount.textContent = currentLength;
-    
-    // Update character count color based on length
-    if (currentLength > 450) {
-        charCount.style.color = '#ff2a6d';
-    } else if (currentLength > 400) {
-        charCount.style.color = '#ff9a5a';
-    } else {
-        charCount.style.color = 'rgba(255, 255, 255, 0.6)';
-    }
-});
-
-// Reaction counter
-reactions.forEach(reaction => {
-    reaction.addEventListener('click', () => {
-        const count = parseInt(reaction.textContent) + 1;
-        reaction.textContent = count;
-        reaction.innerHTML = `${reaction.dataset.emoji} ${count}`;
-        
-        // Add animation
-        reaction.style.transform = 'scale(1.1)';
-        setTimeout(() => {
-            reaction.style.transform = 'scale(1)';
-        }, 200);
-    });
-});
-
-// Modal functions
-function showModal() {
-    successModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    
-    // Trigger confetti
-    confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#ff2a6d', '#d300c5', '#01cdfe']
-    });
-    
-    // Auto-close after 5 seconds
-    setTimeout(() => {
-        closeModal.click();
-    }, 5000);
+function updateCharCount() {
+  const remaining = 500 - confessionInput.value.length;
+  charCount.textContent = `${remaining} characters left`;
+  charCount.className = remaining < 50 ? 'text-red-500' : 'text-gray-400';
 }
 
-function closeModalHandler() {
-    successModal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
+confessionInput.addEventListener('input', updateCharCount);
 
-closeModal.addEventListener('click', closeModalHandler);
-
-// Close modal when clicking outside
-window.addEventListener('click', (e) => {
-    if (e.target === successModal) {
-        closeModalHandler();
-    }
-});
-
-// Form submission
+// Handle form submission
 confessionForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const confession = confessionText.value.trim();
-    const submitBtn = document.getElementById('submitBtn');
-    const btnText = submitBtn.querySelector('.btn-text');
-    const spinner = submitBtn.querySelector('.spinner');
-    
-    // Validation
-    if (confession.length < 10) {
-        showMessage('Confession must be at least 10 characters long!', 'error');
-        return;
-    }
-    
-    if (confession.length > 500) {
-        showMessage('Confession must be less than 500 characters!', 'error');
-        return;
-    }
-    
+  e.preventDefault();
+  const text = confessionInput.value.trim();
+  
+  // Validate input
+  if (text.length < 10) {
+    showStatus('Confession must be at least 10 characters', 'error');
+    return;
+  }
+  
+  if (text.length > 500) {
+    showStatus('Confession must be less than 500 characters', 'error');
+    return;
+  }
+  
+  try {
     // Show loading state
     submitBtn.disabled = true;
-    btnText.textContent = 'Posting...';
-    spinner.style.display = 'inline-block';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
     
-    try {
-        // Check if we're in development or production
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const apiUrl = isLocal 
-            ? 'http://localhost:8888/.netlify/functions/confess' 
-            : '/.netlify/functions/confess';
-        
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: confession })
-        });
-        
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.error || `HTTP error! status: ${response.status}`);
-        }
-        
-        // Show success message and confetti
-        showMessage('Confession posted successfully! 🎉', 'success');
-        showConfetti();
-        
+    // Check if we're in development or production
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiUrl = isLocal 
+      ? 'http://localhost:8888/.netlify/functions/confess'
+      : '/.netlify/functions/confess';
         // Reset form
         confessionForm.reset();
         charCount.textContent = '0';
