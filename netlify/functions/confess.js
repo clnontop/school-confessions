@@ -1,5 +1,5 @@
+// Simplified function - removed unused dependencies
 const { IgApiClient } = require('instagram-private-api');
-const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
